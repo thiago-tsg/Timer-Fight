@@ -1,16 +1,20 @@
 {
   "expo": {
-    "name": "app-timer",
-    "slug": "app-timer",
+    "name": "Timer Fight",
+    "slug": "timer-fight",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "apptimer",
     "userInterfaceStyle": "automatic",
+
     "ios": {
+      "bundleIdentifier": "com.tgonc.timerfight",
       "icon": "./assets/expo.icon"
     },
+
     "android": {
+      "package": "com.tgonc.timerfight",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -19,10 +23,12 @@
       },
       "predictiveBackGestureEnabled": false
     },
+
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
       [
@@ -36,6 +42,7 @@
         }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

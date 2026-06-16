@@ -1,15 +1,34 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Stack, Redirect, useSegments } from "expo-router";
+import { AuthProvider, useAuth } from "../constants/AuthContext";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+function RootNavigation() {
+  const { user, loading } = useAuth();
+  const segments = useSegments();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  if (loading) return null;
+
+  const inAuthScreen = segments[0] === "login";
+
+  if (!user && !inAuthScreen) {
+    return <Redirect href="/login" />;
+  }
+
+  if (user && inAuthScreen) {
+    return <Redirect href="/timer" />;
+  }
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="timer" />
+    </Stack>
+  );
+}
+
+export default function Layout() {
+  return (
+    <AuthProvider>
+      <RootNavigation />
+    </AuthProvider>
   );
 }
