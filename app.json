@@ -10,7 +10,7 @@
 
     "ios": {
       "bundleIdentifier": "com.tgonc.timerfight",
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/favicon.png"
     },
 
     "android": {
@@ -26,7 +26,7 @@
 
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/favicon.png"
     },
 
     "plugins": [
