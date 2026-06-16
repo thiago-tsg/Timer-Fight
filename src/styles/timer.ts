@@ -96,11 +96,11 @@ export const styles = StyleSheet.create({
   },
 
   buttonStart: {
-    backgroundColor: "green",
+    backgroundColor: "#1eff00af",
   },
 
   buttonPause: {
-    backgroundColor: "yellow",
+    backgroundColor: "#fbff00af",
   },
 
   buttonTextPause: {
@@ -108,11 +108,11 @@ export const styles = StyleSheet.create({
   },
 
   buttonReset: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#0062ffb0",
   },
 
   buttonLogout: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#ff0000",
   },
 
   buttonText: {
