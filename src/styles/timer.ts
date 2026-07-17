@@ -39,6 +39,17 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  inputGroup: {
+    alignItems: "center",
+  },
+
+  label: {
+    color: "white",
+    fontSize: 18,
+    marginBottom: 4,
+    fontWeight: 700,
+  },
+
   inputsRow: {
     width: "100%",
     gap: 8,

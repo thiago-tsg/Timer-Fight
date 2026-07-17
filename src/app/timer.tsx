@@ -7,29 +7,33 @@ import {
   Alert,
   Animated,
   Image,
+  ImageBackground,
 } from "react-native";
 import { signOut } from "firebase/auth";
-import { auth } from "../constants/firebase";
+import { auth, db } from "../constants/firebase";
 import { useWindowDimensions } from "react-native";
 import { Audio } from "expo-av";
 import { styles } from "../styles/timer";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../constants/firebase";
 import { logoMap } from "../constants/logoMap";
-import { ImageBackground } from "react-native";
 
 export default function Timer() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
 
-  const isTablet = width >= 768;
+  const isTablet = width >= 767;
   const isDesktop = width >= 1200;
+
   const backgroundImage = isTablet
     ? require("../../assets/desktop.jpg")
     : require("../../assets/mobile.jpg");
+
   const { gymId } = useLocalSearchParams<{ gymId: string }>();
 
   const [gym, setGym] = useState<any>(null);
+  const [plan, setPlan] = useState<string>("free");
+  const [loadingPlan, setLoadingPlan] = useState(true);
 
   const [roundMinutes, setRoundMinutes] = useState(3);
   const [restSeconds, setRestSeconds] = useState(60);
@@ -42,37 +46,53 @@ export default function Timer() {
   const [isRest, setIsRest] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const blinkAnim = useRef(new Animated.Value(1)).current;
 
-  // 🔊 SOUNDS
   const piSound = useRef<Audio.Sound | null>(null);
   const bangSound = useRef<Audio.Sound | null>(null);
 
-  // 🔥 controle PI por segundo
   const lastTickRef = useRef<number | null>(null);
 
   const isDangerTime = timeLeft <= 10 && timeLeft > 0;
 
-  // 🔥 LOAD GYM
-  useEffect(() => {
-    const loadGym = async () => {
-      if (!gymId) return;
+  // =========================
+  // PLAN
+  // =========================
+  const normalizedPlan = (plan || "free").toLowerCase();
+  const isPro = normalizedPlan === "pro";
 
-      const ref = doc(db, "gyms", gymId as string);
+  // =========================
+  // LOAD USER + PLAN
+  // =========================
+  useEffect(() => {
+    const loadUserPlan = async () => {
+      const user = auth.currentUser;
+
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
+      const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
-        setGym(snap.data());
+        const data = snap.data();
+        setGym(data);
+        setPlan((data?.plan || "free").toLowerCase());
       } else {
-        setGym({ id: gymId });
+        setPlan("free");
       }
+
+      setLoadingPlan(false);
     };
 
-    loadGym();
-  }, [gymId]);
+    loadUserPlan();
+  }, []);
 
-  // 🔊 LOAD AUDIO
+  // =========================
+  // SOUNDS
+  // =========================
   useEffect(() => {
     const loadSounds = async () => {
       const { sound: pi } = await Audio.Sound.createAsync(
@@ -111,11 +131,124 @@ export default function Timer() {
     } catch {}
   };
 
-  // 📸 LOGO
-  const gymKey = Array.isArray(gymId) ? gymId[0] : gymId;
-  const logo = logoMap[gymKey] || logoMap.default;
+  // =========================
+  // PROTECTION LAYER (IMPORTANTE)
+  // =========================
+  const requirePro = (action: () => void) => {
+    if (loadingPlan) return;
 
-  // 🔴 BLINK
+    if (!isPro) {
+      router.push({
+        pathname: "/plans",
+        params: { gymId },
+      });
+      return;
+    }
+
+    action();
+  };
+
+  // =========================
+  // TIMER ACTIONS
+  // =========================
+  const startTimer = () => {
+    requirePro(() => {
+      if (isRunning) return;
+
+      setCurrentRound(1);
+      setIsRest(false);
+      setTimeLeft(roundMinutes * 60);
+      setIsRunning(true);
+
+      playBang();
+    });
+  };
+
+  const togglePause = () => {
+    setIsRunning((prev) => !prev);
+  };
+
+  const resetTimer = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    setIsRunning(false);
+    setIsRest(false);
+    setCurrentRound(1);
+    setTimeLeft(0);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace("/login");
+    } catch (error) {
+      console.log("Erro ao sair:", error);
+    }
+  };
+
+  // =========================
+  // TIMER ENGINE
+  // =========================
+  useEffect(() => {
+    if (!isRunning) return;
+
+    intervalRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev > 1) return prev - 1;
+
+        if (!isRest) {
+          playBang();
+
+          if (currentRound < totalRounds) {
+            setIsRest(true);
+            return restSeconds;
+          }
+
+          setIsRunning(false);
+
+          Alert.alert(
+            "Treino finalizado",
+            "Parabéns, todos os rounds foram concluídos.",
+          );
+
+          return 0;
+        }
+
+        playBang();
+
+        setCurrentRound((r) => r + 1);
+        setIsRest(false);
+
+        return roundMinutes * 60;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isRunning, isRest, currentRound, restSeconds, roundMinutes, totalRounds]);
+
+  // =========================
+  // WARNING BEEP
+  // =========================
+  useEffect(() => {
+    if (!isRunning) return;
+    if (timeLeft <= 0) return;
+
+    if (timeLeft <= 10) {
+      if (lastTickRef.current !== timeLeft) {
+        lastTickRef.current = timeLeft;
+        playPi();
+      }
+    }
+  }, [timeLeft, isRunning]);
+
+  // =========================
+  // BLINK ANIMATION
+  // =========================
   useEffect(() => {
     if (!isDangerTime) {
       blinkAnim.stopAnimation();
@@ -139,118 +272,8 @@ export default function Timer() {
     );
 
     anim.start();
-
     return () => anim.stop();
   }, [isDangerTime]);
-
-  // 🔥 START
-  const startTimer = () => {
-    if (isRunning) return;
-
-    setCurrentRound(1);
-    setIsRest(false);
-    setTimeLeft(roundMinutes * 60);
-    setIsRunning(true);
-
-    playBang(); // início treino
-  };
-
-  const togglePause = () => {
-    setIsRunning((prev) => !prev);
-  };
-
-  const resetTimer = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    setIsRunning(false);
-    setIsRest(false);
-    setCurrentRound(1);
-    setTimeLeft(0);
-  };
-
-  const handleLogout = () => {
-    Alert.alert("Sair", "Deseja sair e voltar para o login?", [
-      {
-        text: "Cancelar",
-        style: "cancel",
-      },
-      {
-        text: "Sair",
-        onPress: async () => {
-          try {
-            console.log("ANTES", auth.currentUser);
-
-            await signOut(auth);
-
-            console.log("DEPOIS", auth.currentUser);
-          } catch (error) {
-            console.log("ERRO SIGNOUT", error);
-          }
-        },
-      },
-    ]);
-  };
-
-  // 🔥 TIMER LOOP
-  useEffect(() => {
-    if (!isRunning) return;
-
-    intervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev > 1) return prev - 1;
-
-        // 🔥 FIM DO ROUND
-        if (!isRest) {
-          playBang();
-
-          if (currentRound < totalRounds) {
-            setIsRest(true);
-            return restSeconds;
-          }
-
-          setIsRunning(false);
-
-          Alert.alert(
-            "Treino finalizado",
-            "Parabéns, todos os rounds foram concluídos.",
-          );
-
-          return 0;
-        }
-
-        // 🔥 FIM DO DESCANSO → NOVO ROUND
-        playBang();
-
-        setCurrentRound((r) => r + 1);
-        setIsRest(false);
-
-        // 💥 BANG no início do round também
-        setTimeout(() => playBang(), 50);
-
-        return roundMinutes * 60;
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, isRest, currentRound, restSeconds, roundMinutes, totalRounds]);
-
-  // 🔊 PI 1x POR SEGUNDO NOS 10s FINAIS
-  useEffect(() => {
-    if (!isRunning) return;
-    if (timeLeft <= 0) return;
-
-    if (timeLeft <= 10) {
-      if (lastTickRef.current !== timeLeft) {
-        lastTickRef.current = timeLeft;
-        playPi();
-      }
-    }
-  }, [timeLeft, isRunning]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -260,13 +283,30 @@ export default function Timer() {
     return `${m}:${s}`;
   };
 
+  // =========================
+  // LOG DEBUG
+  // =========================
+  useEffect(() => {
+    console.log("PLAN =>", plan);
+    console.log("LOADING =>", loadingPlan);
+    console.log("IS PRO =>", isPro);
+  }, [plan, loadingPlan]);
+
+  const gymKey = Array.isArray(gymId)
+    ? gymId[0]
+    : typeof gymId === "string"
+      ? gymId
+      : "";
+
+  const logo = logoMap[gymKey] || logoMap.default;
+
   return (
     <ImageBackground
       source={backgroundImage}
       resizeMode="cover"
       style={[styles.container, isDesktop && styles.containerDesktop]}
     >
-      <View style={[styles.cgImg, isDesktop && styles.cgImgDesktop]}>
+      <View style={styles.cgImg}>
         <Image
           source={logo}
           style={{
@@ -277,30 +317,39 @@ export default function Timer() {
         />
       </View>
 
-      <View style={[styles.cgTimer, isDesktop && styles.cgTimerDesktop]}>
+      <View style={styles.cgTimer}>
         <Text style={styles.title}>Timer de Treino</Text>
 
         <View style={styles.inputsRow}>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={String(roundMinutes)}
-            onChangeText={(t) => setRoundMinutes(Number(t) || 0)}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Minutos</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(roundMinutes)}
+              onChangeText={(t) => setRoundMinutes(Number(t) || 0)}
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={String(restSeconds)}
-            onChangeText={(t) => setRestSeconds(Number(t) || 0)}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Descanso</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(restSeconds)}
+              onChangeText={(t) => setRestSeconds(Number(t) || 0)}
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={String(totalRounds)}
-            onChangeText={(t) => setTotalRounds(Number(t) || 0)}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Rounds</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={String(totalRounds)}
+              onChangeText={(t) => setTotalRounds(Number(t) || 0)}
+            />
+          </View>
         </View>
 
         <Text style={styles.status}>
@@ -310,8 +359,6 @@ export default function Timer() {
         <Animated.Text
           style={[
             styles.timer,
-            isTablet && { fontSize: 90 },
-            isDesktop && { fontSize: 140 },
             isDangerTime && styles.timerDanger,
             { opacity: blinkAnim },
           ]}
@@ -319,12 +366,15 @@ export default function Timer() {
           {formatTime(timeLeft)}
         </Animated.Text>
 
-        <View
-          style={[styles.buttonsRow, isDesktop && styles.buttonsRowDesktop]}
-        >
+        <View style={styles.buttonsRow}>
           <TouchableOpacity
-            style={[styles.button, styles.buttonStart]}
+            style={[
+              styles.button,
+              styles.buttonStart,
+              (!isPro || loadingPlan) && { opacity: 0.4 },
+            ]}
             onPress={startTimer}
+            disabled={loadingPlan || !isPro}
           >
             <Text style={styles.buttonText}>Iniciar</Text>
           </TouchableOpacity>
@@ -333,7 +383,7 @@ export default function Timer() {
             style={[styles.button, styles.buttonPause]}
             onPress={togglePause}
           >
-            <Text style={[styles.buttonText, styles.buttonTextPause]}>
+            <Text style={styles.buttonText}>
               {isRunning ? "Pausar" : "Continuar"}
             </Text>
           </TouchableOpacity>
@@ -347,9 +397,7 @@ export default function Timer() {
 
           <TouchableOpacity
             style={[styles.button, styles.buttonLogout]}
-            onPress={async () => {
-              await signOut(auth);
-            }}
+            onPress={handleLogout}
           >
             <Text style={styles.buttonText}>Sair</Text>
           </TouchableOpacity>

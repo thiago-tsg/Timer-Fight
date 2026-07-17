@@ -1,5 +1,5 @@
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AuthProvider, useAuth } from "../constants/AuthContext";
 
 function RootNavigation() {
@@ -7,22 +7,69 @@ function RootNavigation() {
   const segments = useSegments();
   const router = useRouter();
 
-  const inLogin = segments[0] === "login";
-  const inTimer = segments[0] === "timer";
+  const route = segments?.[0]; // pode ser undefined
+  const isIndex = !route; // 👈 INDEX REAL
+
+  const redirectLock = useRef(false);
+
+  const publicRoutes = ["login", "home"]; // index já está coberto por isIndex
 
   useEffect(() => {
     if (loading) return;
+    if (redirectLock.current) return;
 
-    // ❌ se não logado e tentar ir pro timer → manda login
-    if (!user && inTimer) {
+    // ❌ não logado tentando rota privada
+    if (!user && route && !publicRoutes.includes(route)) {
+      redirectLock.current = true;
+
       router.replace("/login");
+
+      setTimeout(() => {
+        redirectLock.current = false;
+      }, 300);
+
+      return;
     }
 
-    // ❌ se logado e estiver no login → manda timer
-    if (user && inLogin) {
-      router.replace("/timer");
+    // ❌ não logado no index
+    if (!user && isIndex) {
+      redirectLock.current = true;
+
+      router.replace("/login");
+
+      setTimeout(() => {
+        redirectLock.current = false;
+      }, 300);
+
+      return;
     }
-  }, [user, loading, segments]);
+
+    // ❌ logado no login
+    if (user && route === "login") {
+      redirectLock.current = true;
+
+      router.replace("/timer");
+
+      setTimeout(() => {
+        redirectLock.current = false;
+      }, 300);
+
+      return;
+    }
+
+    // ❌ logado no index
+    if (user && isIndex) {
+      redirectLock.current = true;
+
+      router.replace("/timer");
+
+      setTimeout(() => {
+        redirectLock.current = false;
+      }, 300);
+
+      return;
+    }
+  }, [user, loading, route, isIndex]);
 
   if (loading) return null;
 

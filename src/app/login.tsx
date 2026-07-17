@@ -12,6 +12,18 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const goNext = (gymId: string, plan: string) => {
+    if (plan !== "pro") {
+      router.replace("/plans");
+      return;
+    }
+
+    router.replace({
+      pathname: "/timer",
+      params: { gymId },
+    });
+  };
+
   const handleGoogleLogin = async () => {
     setError("");
 
@@ -19,7 +31,6 @@ export default function Login() {
       const result = await signInWithPopup(auth, googleProvider);
 
       const uid = result.user.uid;
-
       const snap = await getDoc(doc(db, "users", uid));
 
       if (!snap.exists()) {
@@ -28,11 +39,9 @@ export default function Login() {
       }
 
       const gymId = snap.data()?.gymId;
+      const plan = snap.data()?.plan || "free";
 
-      router.replace({
-        pathname: "/timer",
-        params: { gymId },
-      });
+      goNext(gymId, plan);
     } catch (err: any) {
       setError(err.message || "Erro ao fazer login com Google");
     }
@@ -53,16 +62,14 @@ export default function Login() {
       }
 
       const gymId = snap.data()?.gymId;
+      const plan = snap.data()?.plan || "free";
 
       if (!gymId) {
         setError("Usuário sem gymId.");
         return;
       }
 
-      router.replace({
-        pathname: "/timer",
-        params: { gymId },
-      });
+      goNext(gymId, plan);
     } catch (err: any) {
       setError(err.message || "Erro ao fazer login");
     }
