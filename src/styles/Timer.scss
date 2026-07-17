@@ -1,0 +1,188 @@
+@import "./index.scss";
+
+.cg-timer {
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: relative;
+
+  .c-timer {
+    position: relative;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.575);
+    padding: 0.5rem;
+    backdrop-filter: blur(5px);
+    border-radius: 50%;
+    width: min(35vw, 39rem);
+    height: min(35vw, 39rem);
+
+    .cg-min-round,
+    .cg-descanso,
+    .cg-rounds {
+      label {
+        font-weight: 700;
+        color: white;
+      }
+
+      input {
+        padding: 0.5rem 0;
+        border-radius: 0.8rem;
+        border: 1px solid $tertiary;
+        text-align: center;
+        font-weight: 700;
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+
+        &:focus {
+          outline: none;
+          border-color: $tertiary;
+          box-shadow: 0 0 0 2px rgba(212, 21, 21, 0.3);
+        }
+      }
+
+      input[type="number"] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+        -webkit-appearance: none;
+      }
+
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
+      }
+    }
+
+    .cg-tempo {
+      transition: all 0.3s ease;
+      padding: 0.5rem 0;
+      width: 20rem !important;
+      padding: 0.5rem 0;
+      border-radius: 0.8rem;
+      border: 1px solid $secondary;
+
+      .tempo {
+        font-weight: 700;
+        font-size: 2rem;
+        color: white;
+      }
+
+      .tempo.urgent {
+        animation: blink 1s step-start infinite;
+        color: red;
+        font-size: 2.5rem;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      &.rest {
+        background-color: lighten($tertiary, 30%);
+      }
+    }
+
+    .cg-btn {
+      flex-wrap: wrap;
+
+      .btn {
+        &:nth-child(1) {
+          background-color: green;
+          color: white;
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+
+        &:nth-child(2) {
+          background-color: yellow;
+          color: black;
+
+          &:hover {
+            color: white;
+            background-color: rgba(0, 0, 255, 0.247);
+          }
+        }
+
+        &:nth-child(3) {
+          background-color: red;
+          color: white;
+
+          &:hover {
+            background-color: darken($tertiary, 10%);
+            color: white;
+          }
+        }
+
+        border: none;
+
+        &:hover {
+          background-color: darken($primary, 10%);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .cg-timer {
+    gap: 1rem;
+    background-position: center 1%;
+    background-size: 8rem auto;
+
+    .c-timer {
+      width: 100%;
+      border-radius: 0.5rem;
+      height: auto;
+      padding: 1rem 0.5rem;
+
+      .cg-tempo {
+        padding: 0.75rem 1.5rem;
+      }
+
+      .cg-min-round,
+      .cg-descanso,
+      .cg-rounds {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid $secondary;
+        border-radius: 1rem;
+        width: 100%;
+        padding: 0.5rem 1rem;
+        label {
+          text-align: center;
+        }
+        input {
+          padding: 0.3rem;
+          border-radius: 1rem;
+          border: none;
+        }
+      }
+
+      .cg-tempo {
+        width: 100% !important;
+      }
+    }
+  }
+}
+
+@media (min-width: 769px){
+  .cg-timer {
+    .c-timer {
+      width: min(70vw, 40rem);
+      height: min(70vw, 40rem);
+    }
+  }
+}

@@ -1,0 +1,227 @@
+@import "./index.scss";
+
+.login-container {
+  position: relative;
+  min-height: 100vh;
+  background: #111;
+
+  h2 {
+    padding-bottom: 1rem;
+    color: white;
+  }
+
+  form {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 400px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2rem;
+    border-radius: 2rem;
+    backdrop-filter: blur(5px);
+
+    input {
+      padding: 0.8rem 1rem;
+      border-radius: 1rem;
+      border: none;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+
+      &:focus {
+        outline: none;
+        border-color: $tertiary;
+        box-shadow: 0 0 0 2px rgba(212, 21, 21, 0.3);
+      }
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+
+      button {
+        flex: 1 1 45%;
+        padding: 0.8rem 1rem;
+        border: none;
+        border-radius: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        &:nth-child(1) {
+          background-color: green;
+          color: white;
+        }
+
+        &:nth-child(2) {
+          background-color: yellow;
+          color: black;
+
+          &:hover {
+            background-color: rgba(0, 0, 255, 0.247);
+            color: white;
+          }
+        }
+
+        &:nth-child(3) {
+          background-color: red;
+          color: white;
+
+          &:hover {
+            background-color: darken($tertiary, 10%);
+          }
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .error {
+      color: red;
+      font-weight: 700;
+      text-align: center;
+      animation: blink 1s step-start infinite;
+
+      @keyframes blink {
+        50% {
+          opacity: 0.5;
+        }
+      }
+    }
+  }
+
+  // Formas flutuantes inspiradas no Timer
+  .background-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+
+    .shape {
+      position: absolute;
+      filter: blur(15px);
+      animation: float linear infinite;
+
+      &.circle {
+        border-radius: 50%;
+        background: rgba(232, 29, 36, 0.3);
+
+        &.circle1 {
+          width: 80px;
+          height: 80px;
+          top: 5%;
+          left: 35%;
+          animation-duration: 20s;
+        }
+        &.circle2 {
+          width: 120px;
+          height: 120px;
+          top: 70%;
+          left: 7%;
+          animation-duration: 25s;
+        }
+        &.circle3 {
+          width: 60px;
+          height: 60px;
+          top: 40%;
+          left: 80%;
+          animation-duration: 22s;
+        }
+        &.circle4 {
+          width: 100px;
+          height: 100px;
+          top: 20%;
+          left: 90%;
+          animation-duration: 28s;
+        }
+      }
+
+      &.triangle {
+        width: 0;
+        height: 0;
+        border-left: 40px solid transparent;
+        border-right: 40px solid transparent;
+        border-bottom: 60px solid rgba(255, 255, 255, 0.2);
+
+        &.triangle1 {
+          top: 10%;
+          left: 70%;
+          animation-duration: 25s;
+        }
+        &.triangle2 {
+          top: 50%;
+          left: 20%;
+          animation-duration: 30s;
+        }
+        &.triangle3 {
+          top: 90%;
+          left: 90%;
+          animation-duration: 22s;
+        }
+      }
+
+      &.square {
+        background: rgba(255, 0, 0, 0.3);
+
+        &.square1 {
+          width: 70px;
+          height: 70px;
+          top: 30%;
+          left: 10%;
+          animation-duration: 20s;
+        }
+        &.square2 {
+          width: 90px;
+          height: 90px;
+          top: 60%;
+          left: 80%;
+          animation-duration: 28s;
+        }
+        &.square3 {
+          width: 60px;
+          height: 60px;
+          top: 95%;
+          left: 25%;
+          animation-duration: 24s;
+        }
+      }
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-50px) rotate(180deg);
+      }
+      100% {
+        transform: translateY(0) rotate(360deg);
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .login-container form {
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+
+    input {
+      font-size: 0.9rem;
+      padding: 0.5rem 0.8rem;
+    }
+
+    .buttons button {
+      flex: 1 1 100%;
+    }
+  }
+}
